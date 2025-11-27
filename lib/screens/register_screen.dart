@@ -74,7 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     try {
       await _authService.register(
         name: _nameController.text,
-        email: _isStudent ? '' : _emailController.text,
+        email: _isStudent ? null : _emailController.text,
         password: _passwordController.text,
         role: _isStudent ? 'student' : 'teacher',
         nim: _isStudent ? _nimController.text : null,

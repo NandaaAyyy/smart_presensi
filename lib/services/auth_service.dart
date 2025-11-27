@@ -7,7 +7,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> register({
     required String name,
-    required String email,
+    String? email,
     required String password,
     required String role,
     String? nim,

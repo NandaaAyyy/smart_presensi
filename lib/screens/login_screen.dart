@@ -9,7 +9,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _identifierController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isStudent = true;
   bool _isLoading = false;
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   void dispose() {
     _animationController.dispose();
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
     try {
       await _authService.login(
-        identifier: _isStudent ? _emailController.text : _emailController.text,
+        identifier: _identifierController.text,
         password: _passwordController.text,
       );
 
@@ -299,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                                 child: TextField(
-                                  controller: _emailController,
+                                  controller: _identifierController,
                                   style: const TextStyle(fontSize: 16),
                                   decoration: InputDecoration(
                                     labelText: _isStudent ? 'Student ID (NIM)' : 'Email Address',
