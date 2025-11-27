@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -13,7 +14,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   final TextEditingController _nimController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   bool _isStudent = true;
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -53,7 +57,47 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     _nimController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.register(
+        name: _nameController.text,
+        email: _isStudent ? '' : _emailController.text,
+        password: _passwordController.text,
+        role: _isStudent ? 'student' : 'teacher',
+        nim: _isStudent ? _nimController.text : null,
+        phone: !_isStudent ? _phoneController.text : null,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful!')),
+        );
+        Navigator.pop(context); // Go back to login
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -339,6 +383,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                               if (!_isStudent)
                                 // Phone field for teacher
                                 TextField(
+                                  controller: _phoneController,
                                   style: const TextStyle(fontSize: 16),
                                   decoration: InputDecoration(
                                     labelText: 'Phone Number',
@@ -454,10 +499,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                   ],
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    // TODO: Implement registration logic
-                                    Navigator.pop(context); // Go back to login
-                                  },
+                                  onPressed: _isLoading ? null : _register,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
@@ -465,14 +507,16 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Create Account',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const CircularProgressIndicator(color: Colors.white)
+                                      : const Text(
+                                          'Create Account',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],

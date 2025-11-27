@@ -38,6 +38,12 @@ dependencies:
   # Camera package for face recognition
   camera: ^0.10.5+9
 
+  # HTTP client
+  http: ^1.2.1
+
+  # Shared preferences for local storage
+  shared_preferences: ^2.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +12,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isStudent = true;
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -48,6 +51,36 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.login(
+        identifier: _isStudent ? _emailController.text : _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (mounted) {
+        // Navigate based on role
+        if (_isStudent) {
+          Navigator.pushReplacementNamed(context, '/student_main');
+        } else {
+          Navigator.pushReplacementNamed(context, '/teacher_main');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -366,14 +399,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   ],
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    // TODO: Implement login logic
-                                    if (_isStudent) {
-                                      Navigator.pushReplacementNamed(context, '/student_main');
-                                    } else {
-                                      Navigator.pushReplacementNamed(context, '/teacher_main');
-                                    }
-                                  },
+                                  onPressed: _isLoading ? null : _login,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
@@ -381,14 +407,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Sign In',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const CircularProgressIndicator(color: Colors.white)
+                                      : const Text(
+                                          'Sign In',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],
