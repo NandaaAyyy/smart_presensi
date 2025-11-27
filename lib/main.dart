@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/student_main_screen.dart';
 import 'screens/teacher_main_screen.dart';
 import 'screens/student_sessions_screen.dart';
@@ -68,6 +69,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
         '/student_main': (context) => const StudentMainScreen(),
         '/teacher_main': (context) => const TeacherMainScreen(),
         '/student_sessions': (context) => const StudentSessionsScreen(),

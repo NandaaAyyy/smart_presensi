@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStateMixin {
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _nimController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isStudent = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -45,8 +48,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   void dispose() {
     _animationController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
+    _nimController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -102,7 +108,20 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
+                        // Back button
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
                         // Enhanced Logo/Brand with glow effect
                         Container(
                           padding: const EdgeInsets.all(24),
@@ -133,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                              Icons.face_retouching_natural,
+                              Icons.person_add,
                               size: 48,
                               color: Colors.white,
                             ),
@@ -146,9 +165,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             colors: [Colors.white, Colors.white70],
                           ).createShader(bounds),
                           child: const Text(
-                            'Smart Presence',
+                            'Create Account',
                             style: TextStyle(
-                              fontSize: 36,
+                              fontSize: 32,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                               letterSpacing: 1.2,
@@ -163,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'AI-Powered Attendance System',
+                            'Join Smart Presence',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.white,
@@ -171,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             ),
                           ),
                         ),
-                        const SizedBox(height: 50),
+                        const SizedBox(height: 40),
                         // Enhanced Role Selection with better design
                         Container(
                           decoration: BoxDecoration(
@@ -241,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           ),
                         ),
                         const SizedBox(height: 32),
-                        // Enhanced Login Form with glassmorphism
+                        // Enhanced Registration Form with glassmorphism
                         Container(
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
@@ -261,12 +280,38 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           ),
                           child: Column(
                             children: [
-                              // Animated input fields
+                              // Name field
+                              TextField(
+                                controller: _nameController,
+                                style: const TextStyle(fontSize: 16),
+                                decoration: InputDecoration(
+                                  labelText: 'Full Name',
+                                  labelStyle: TextStyle(
+                                    color: const Color(0xFF667EEA).withOpacity(0.7),
+                                  ),
+                                  prefixIcon: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Color(0xFF667EEA),
+                                    ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              // NIM/Email field
                               AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                                 child: TextField(
-                                  controller: _emailController,
+                                  controller: _isStudent ? _nimController : _emailController,
                                   style: const TextStyle(fontSize: 16),
                                   decoration: InputDecoration(
                                     labelText: _isStudent ? 'Student ID (NIM)' : 'Email Address',
@@ -290,34 +335,22 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                                child: TextField(
-                                  controller: _passwordController,
-                                  obscureText: true,
+                              if (!_isStudent) const SizedBox(height: 20),
+                              if (!_isStudent)
+                                // Phone field for teacher
+                                TextField(
                                   style: const TextStyle(fontSize: 16),
                                   decoration: InputDecoration(
-                                    labelText: 'Password',
+                                    labelText: 'Phone Number',
                                     labelStyle: TextStyle(
                                       color: const Color(0xFF667EEA).withOpacity(0.7),
                                     ),
                                     prefixIcon: Container(
                                       padding: const EdgeInsets.all(12),
                                       child: const Icon(
-                                        Icons.lock_outline,
+                                        Icons.phone,
                                         color: Color(0xFF667EEA),
                                       ),
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: const Icon(
-                                        Icons.visibility_off,
-                                        color: Color(0xFF667EEA),
-                                      ),
-                                      onPressed: () {
-                                        // TODO: Toggle password visibility
-                                      },
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -328,25 +361,80 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                     contentPadding: const EdgeInsets.symmetric(vertical: 16),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () {
-                                    // TODO: Forgot password
-                                  },
-                                  child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
-                                      color: const Color(0xFF667EEA).withOpacity(0.8),
-                                      fontWeight: FontWeight.w500,
+                              const SizedBox(height: 20),
+                              // Password field
+                              TextField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                style: const TextStyle(fontSize: 16),
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  labelStyle: TextStyle(
+                                    color: const Color(0xFF667EEA).withOpacity(0.7),
+                                  ),
+                                  prefixIcon: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    child: const Icon(
+                                      Icons.lock_outline,
+                                      color: Color(0xFF667EEA),
                                     ),
                                   ),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(
+                                      Icons.visibility_off,
+                                      color: Color(0xFF667EEA),
+                                    ),
+                                    onPressed: () {
+                                      // TODO: Toggle password visibility
+                                    },
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              // Confirm Password field
+                              TextField(
+                                controller: _confirmPasswordController,
+                                obscureText: true,
+                                style: const TextStyle(fontSize: 16),
+                                decoration: InputDecoration(
+                                  labelText: 'Confirm Password',
+                                  labelStyle: TextStyle(
+                                    color: const Color(0xFF667EEA).withOpacity(0.7),
+                                  ),
+                                  prefixIcon: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    child: const Icon(
+                                      Icons.lock_outline,
+                                      color: Color(0xFF667EEA),
+                                    ),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(
+                                      Icons.visibility_off,
+                                      color: Color(0xFF667EEA),
+                                    ),
+                                    onPressed: () {
+                                      // TODO: Toggle password visibility
+                                    },
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[50],
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              // Enhanced login button with gradient
+                              // Enhanced register button with gradient
                               Container(
                                 width: double.infinity,
                                 height: 56,
@@ -367,12 +455,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    // TODO: Implement login logic
-                                    if (_isStudent) {
-                                      Navigator.pushReplacementNamed(context, '/student_main');
-                                    } else {
-                                      Navigator.pushReplacementNamed(context, '/teacher_main');
-                                    }
+                                    // TODO: Implement registration logic
+                                    Navigator.pop(context); // Go back to login
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
@@ -382,7 +466,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                     ),
                                   ),
                                   child: const Text(
-                                    'Sign In',
+                                    'Create Account',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
@@ -395,23 +479,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Additional options
+                        // Back to login
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Don't have an account?",
+                              'Already have an account?',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 14,
                               ),
                             ),
                             TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/register');
-                              },
+                              onPressed: () => Navigator.pop(context),
                               child: const Text(
-                                'Register',
+                                'Sign In',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,

@@ -59,12 +59,14 @@ class _StudentBottomNavState extends State<StudentBottomNav> with TickerProvider
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-        child: BottomNavigationBar(
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          child: BottomNavigationBar(
           currentIndex: widget.currentIndex,
           onTap: (index) {
             _animationController.forward().then((_) {
@@ -117,6 +119,7 @@ class _StudentBottomNavState extends State<StudentBottomNav> with TickerProvider
               label: 'Profile',
             ),
           ],
+        ),
         ),
       ),
     );
