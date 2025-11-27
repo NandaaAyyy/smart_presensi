@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+// import 'login_screen.dart'; // Import ini jika Anda ingin navigasi ke LoginScreen tertentu
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,12 +16,21 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  
   bool _isStudent = true;
   bool _isLoading = false;
+  
+  // STATE BARU: Untuk toggle password visibility
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+
   final AuthService _authService = AuthService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  
+  // Kunci form untuk validasi (Opsional: dapat ditambahkan untuk validasi field)
+  // final _formKey = GlobalKey<FormState>(); 
 
   @override
   void initState() {
@@ -62,35 +72,70 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   }
 
   Future<void> _register() async {
+    // 1. Validasi Password Match
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Passwords do not match')),
       );
       return;
     }
+    
+    // 2. Validasi field wajib (Contoh dasar)
+    if (_nameController.text.isEmpty || _passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Name and Password fields cannot be empty.')),
+        );
+        return;
+    }
+    
+    // Validasi kondisional untuk email/nim
+    if (_isStudent) {
+        if (_emailController.text.isEmpty || _nimController.text.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Email and Student ID are required for students.')),
+            );
+            return;
+        }
+    } else {
+         if (_emailController.text.isEmpty || _phoneController.text.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Email and Phone Number are required for teachers/admin.')),
+            );
+            return;
+        }
+    }
 
     setState(() => _isLoading = true);
 
     try {
+      // 3. Panggil AuthService.register
       await _authService.register(
         name: _nameController.text,
-        email: _isStudent ? null : _emailController.text,
+        email: _emailController.text,
         password: _passwordController.text,
         role: _isStudent ? 'student' : 'teacher',
-        nim: _isStudent ? _nimController.text : null,
+        // Mengirimkan data yang relevan saja. Non-relevan dikirim null.
+        nim: _isStudent ? _nimController.text : null, 
         phone: !_isStudent ? _phoneController.text : null,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful!')),
+          const SnackBar(content: Text('Registration successful! Please log in.')),
         );
-        Navigator.pop(context); // Go back to login
+        Navigator.pop(context); // Kembali ke halaman Login
+        // Atau: Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
       }
     } catch (e) {
+      // 4. Tangani Exception dari AuthService (misal: "Registration failed: Network error...")
       if (mounted) {
+        // Membersihkan error message jika ada Exception:
+        String errorMessage = e.toString().contains('Exception:') 
+            ? e.toString().substring(e.toString().indexOf(':') + 1).trim()
+            : 'An unknown error occurred.';
+            
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed: $e')),
+          SnackBar(content: Text('Registration failed: $errorMessage')),
         );
       }
     } finally {
@@ -166,7 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Enhanced Logo/Brand with glow effect
+                        // Logo/Brand
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
@@ -203,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                           ),
                         ),
                         const SizedBox(height: 32),
-                        // Enhanced title with better typography
+                        // Title
                         ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
                             colors: [Colors.white, Colors.white70],
@@ -235,7 +280,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                           ),
                         ),
                         const SizedBox(height: 40),
-                        // Enhanced Role Selection with better design
+                        // Role Selection - PERBAIKAN DI MULAI DARI SINI ⬇️
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.95),
@@ -248,53 +293,66 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                               ),
                             ],
                           ),
-                          child: ToggleButtons(
-                            isSelected: [_isStudent, !_isStudent],
-                            onPressed: (index) {
-                              setState(() {
-                                _isStudent = index == 0;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            selectedColor: Colors.white,
-                            fillColor: const Color(0xFF667EEA),
-                            color: const Color(0xFF667EEA),
-                            splashColor: Colors.transparent,
-                            highlightColor: Colors.transparent,
+                          // Gunakan Row dan Expanded untuk memastikan ToggleButtons pas di layar
+                          child: Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
-                                child: Row(
+                              Expanded(
+                                child: ToggleButtons(
+                                  isSelected: [_isStudent, !_isStudent],
+                                  onPressed: (index) {
+                                    setState(() {
+                                      _isStudent = index == 0;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  selectedColor: Colors.white,
+                                  fillColor: const Color(0xFF667EEA),
+                                  color: const Color(0xFF667EEA),
+                                  splashColor: Colors.transparent,
+                                  highlightColor: Colors.transparent,
+                                  // Hapus padding horizontal yang menyebabkan overflow
                                   children: [
-                                    Icon(
-                                      Icons.school,
-                                      color: _isStudent ? Colors.white : const Color(0xFF667EEA),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Student',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
+                                    Container(
+                                      // Padding Vertikal dipertahankan, Horizontal dikecilkan/dihapus
+                                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center, // Pusatkan konten
+                                        children: [
+                                          Icon(
+                                            Icons.school,
+                                            color: _isStudent ? Colors.white : const Color(0xFF667EEA),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Student',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                              color: _isStudent ? Colors.white : const Color(0xFF667EEA),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.admin_panel_settings,
-                                      color: !_isStudent ? Colors.white : const Color(0xFF667EEA),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Teacher/Admin',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center, // Pusatkan konten
+                                        children: [
+                                          Icon(
+                                            Icons.admin_panel_settings,
+                                            color: !_isStudent ? Colors.white : const Color(0xFF667EEA),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Teacher/Admin',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                              color: !_isStudent ? Colors.white : const Color(0xFF667EEA),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -303,8 +361,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                             ],
                           ),
                         ),
+                        // Role Selection - PERBAIKAN SELESAI DI SINI ⬆️
                         const SizedBox(height: 32),
-                        // Enhanced Registration Form with glassmorphism
+                        // Registration Form
                         Container(
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
@@ -325,161 +384,80 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                           child: Column(
                             children: [
                               // Name field
-                              TextField(
+                              _buildTextField(
                                 controller: _nameController,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  labelText: 'Full Name',
-                                  labelStyle: TextStyle(
-                                    color: const Color(0xFF667EEA).withOpacity(0.7),
-                                  ),
-                                  prefixIcon: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    child: const Icon(
-                                      Icons.person,
-                                      color: Color(0xFF667EEA),
-                                    ),
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                ),
+                                labelText: 'Full Name',
+                                icon: Icons.person,
                               ),
                               const SizedBox(height: 20),
-                              // NIM/Email field
-                              AnimatedContainer(
+                              // NIM/Email/Phone field - DYNAMIC
+                              AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                                child: TextField(
-                                  controller: _isStudent ? _nimController : _emailController,
-                                  style: const TextStyle(fontSize: 16),
-                                  decoration: InputDecoration(
-                                    labelText: _isStudent ? 'Student ID (NIM)' : 'Email Address',
-                                    labelStyle: TextStyle(
-                                      color: const Color(0xFF667EEA).withOpacity(0.7),
+                                transitionBuilder: (child, animation) {
+                                  return SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.2),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: FadeTransition(opacity: animation, child: child),
+                                  );
+                                },
+                                child: Column(
+                                  key: ValueKey(_isStudent), // Key untuk memaksa AnimatedSwitcher bekerja
+                                  children: [
+                                    // Field Email (Wajib untuk Keduanya, gunakan emailController)
+                                    _buildTextField(
+                                        controller: _emailController,
+                                        labelText: 'Email Address',
+                                        icon: Icons.email,
                                     ),
-                                    prefixIcon: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Icon(
-                                        _isStudent ? Icons.badge : Icons.email,
-                                        color: const Color(0xFF667EEA),
-                                      ),
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[50],
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                  ),
+                                    const SizedBox(height: 20),
+                                    if (_isStudent)
+                                        // NIM field (Student)
+                                        _buildTextField(
+                                          controller: _nimController,
+                                          labelText: 'Student ID (NIM)',
+                                          icon: Icons.badge,
+                                          keyboardType: TextInputType.number,
+                                        )
+                                    else
+                                        // Phone field (Teacher/Admin)
+                                        _buildTextField(
+                                          controller: _phoneController,
+                                          labelText: 'Phone Number',
+                                          icon: Icons.phone,
+                                          keyboardType: TextInputType.phone,
+                                        ),
+                                    
+                                  ],
                                 ),
                               ),
-                              if (!_isStudent) const SizedBox(height: 20),
-                              if (!_isStudent)
-                                // Phone field for teacher
-                                TextField(
-                                  controller: _phoneController,
-                                  style: const TextStyle(fontSize: 16),
-                                  decoration: InputDecoration(
-                                    labelText: 'Phone Number',
-                                    labelStyle: TextStyle(
-                                      color: const Color(0xFF667EEA).withOpacity(0.7),
-                                    ),
-                                    prefixIcon: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      child: const Icon(
-                                        Icons.phone,
-                                        color: Color(0xFF667EEA),
-                                      ),
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[50],
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                  ),
-                                ),
                               const SizedBox(height: 20),
                               // Password field
-                              TextField(
+                              _buildPasswordField(
                                 controller: _passwordController,
-                                obscureText: true,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  labelText: 'Password',
-                                  labelStyle: TextStyle(
-                                    color: const Color(0xFF667EEA).withOpacity(0.7),
-                                  ),
-                                  prefixIcon: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    child: const Icon(
-                                      Icons.lock_outline,
-                                      color: Color(0xFF667EEA),
-                                    ),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(
-                                      Icons.visibility_off,
-                                      color: Color(0xFF667EEA),
-                                    ),
-                                    onPressed: () {
-                                      // TODO: Toggle password visibility
-                                    },
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                ),
+                                labelText: 'Password',
+                                isVisible: _isPasswordVisible,
+                                onToggle: () {
+                                  setState(() {
+                                    _isPasswordVisible = !_isPasswordVisible;
+                                  });
+                                },
                               ),
                               const SizedBox(height: 20),
                               // Confirm Password field
-                              TextField(
+                              _buildPasswordField(
                                 controller: _confirmPasswordController,
-                                obscureText: true,
-                                style: const TextStyle(fontSize: 16),
-                                decoration: InputDecoration(
-                                  labelText: 'Confirm Password',
-                                  labelStyle: TextStyle(
-                                    color: const Color(0xFF667EEA).withOpacity(0.7),
-                                  ),
-                                  prefixIcon: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    child: const Icon(
-                                      Icons.lock_outline,
-                                      color: Color(0xFF667EEA),
-                                    ),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(
-                                      Icons.visibility_off,
-                                      color: Color(0xFF667EEA),
-                                    ),
-                                    onPressed: () {
-                                      // TODO: Toggle password visibility
-                                    },
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[50],
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                ),
+                                labelText: 'Confirm Password',
+                                isVisible: _isConfirmPasswordVisible,
+                                onToggle: () {
+                                  setState(() {
+                                    _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                  });
+                                },
                               ),
                               const SizedBox(height: 24),
-                              // Enhanced register button with gradient
+                              // Register button
                               Container(
                                 width: double.infinity,
                                 height: 56,
@@ -555,6 +533,81 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
             ),
           ],
         ),
+      ),
+    );
+  }
+  
+  // Helper Widget untuk TextField Biasa
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(fontSize: 16),
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: TextStyle(
+          color: const Color(0xFF667EEA).withOpacity(0.7),
+        ),
+        prefixIcon: Container(
+          padding: const EdgeInsets.all(12),
+          child: Icon(
+            icon,
+            color: const Color(0xFF667EEA),
+          ),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+    );
+  }
+  
+  // Helper Widget untuk Password Field (dengan toggle)
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String labelText,
+    required bool isVisible,
+    required VoidCallback onToggle,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: !isVisible,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: TextStyle(
+          color: const Color(0xFF667EEA).withOpacity(0.7),
+        ),
+        prefixIcon: Container(
+          padding: const EdgeInsets.all(12),
+          child: const Icon(
+            Icons.lock_outline,
+            color: Color(0xFF667EEA),
+          ),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            isVisible ? Icons.visibility : Icons.visibility_off,
+            color: const Color(0xFF667EEA),
+          ),
+          onPressed: onToggle,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
       ),
     );
   }

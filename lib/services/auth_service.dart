@@ -3,11 +3,20 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://10.0.2.2:8000/api'; // For Android emulator
+  static const String _baseUrl = 'http://10.0.2.2:8000/api'; 
+  static const String _registerUrl = '$_baseUrl/register';
+  static const String _loginUrl = '$_baseUrl/login';
+  static const String _logoutUrl = '$_baseUrl/logout';
 
+  static const String _tokenKey = 'token';
+  static const String _userKey = 'user';
+
+  Future<SharedPreferences> _getPrefs() async {
+    return await SharedPreferences.getInstance();
+  }
   Future<Map<String, dynamic>> register({
     required String name,
-    String? email,
+    required String email,
     required String password,
     required String role,
     String? nim,
@@ -15,7 +24,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/register'),
+        Uri.parse(_registerUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': name,
@@ -23,24 +32,14 @@ class AuthService {
           'password': password,
           'password_confirmation': password,
           'role': role,
-          'nim': nim,
+          'nim': nim, 
           'phone': phone,
         }),
       );
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 201 && data['success']) {
-        // Save token
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', data['token']);
-        await prefs.setString('user', jsonEncode(data['user']));
-        return data;
-      } else {
-        throw Exception(data['message'] ?? 'Registration failed');
-      }
+      return _handleAuthResponse(response);
     } catch (e) {
-      throw Exception('Network error: $e');
+      throw Exception('Network error during registration: $e'); 
     }
   }
 
@@ -50,7 +49,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse(_loginUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'identifier': identifier,
@@ -58,28 +57,21 @@ class AuthService {
         }),
       );
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success']) {
-        // Save token
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', data['token']);
-        await prefs.setString('user', jsonEncode(data['user']));
-        return data;
-      } else {
-        throw Exception(data['message'] ?? 'Login failed');
-      }
+      return _handleAuthResponse(response);
     } catch (e) {
-      throw Exception('Network error: $e');
+      throw Exception('Network error during login: $e');
     }
   }
 
+
   Future<void> logout() async {
+    final prefs = await _getPrefs();
+    final token = prefs.getString(_tokenKey);
+
     try {
-      final token = await getToken();
       if (token != null) {
         await http.post(
-          Uri.parse('$baseUrl/logout'),
+          Uri.parse(_logoutUrl),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -87,23 +79,40 @@ class AuthService {
         );
       }
     } catch (e) {
-      // Ignore network errors on logout
+      print('Warning: API logout failed ($e), clearing local data.');
+    } finally {
+    
+      await prefs.remove(_tokenKey);
+      await prefs.remove(_userKey);
     }
-
-    // Clear local storage
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('user');
   }
 
+  Future<Map<String, dynamic>> _handleAuthResponse(http.Response response) async {
+    try {
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode >= 200 && response.statusCode < 300 && data['success'] == true) {
+        final prefs = await _getPrefs();
+        await prefs.setString(_tokenKey, data['token']);
+        await prefs.setString(_userKey, jsonEncode(data['user']));
+        return data;
+      } else {
+    
+        throw Exception(data['message'] ?? 'Authentication failed (Status ${response.statusCode})');
+      }
+    } on FormatException {
+      throw Exception('Invalid response format from server (Status ${response.statusCode})');
+    }
+  }
+  
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+    final prefs = await _getPrefs();
+    return prefs.getString(_tokenKey);
   }
 
   Future<Map<String, dynamic>?> getUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('user');
+    final prefs = await _getPrefs();
+    final userJson = prefs.getString(_userKey);
     if (userJson != null) {
       return jsonDecode(userJson);
     }
